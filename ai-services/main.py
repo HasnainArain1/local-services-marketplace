@@ -34,6 +34,13 @@ CATEGORIES = [
     {"id": "cat_13", "name": "Carpentry",           "desc": "Furniture repair, door fixing, custom woodwork, cabinet making, and wood installations."},
     {"id": "cat_14", "name": "Home Security",       "desc": "CCTV camera installation, alarm systems, door lock repair, and home security setup."},
     {"id": "cat_15", "name": "Cooking & Catering",  "desc": "Home cooking, event catering, meal preparation, birthday food, and food delivery services."},
+
+    # Added service categories
+    {"id": "cat_16", "name": "Appliance Repair",    "desc": "Repairing and servicing refrigerators, washing machines, ovens, microwaves, and other home appliances."},
+    {"id": "cat_17", "name": "Pest Control",        "desc": "Removing insects, rodents, termites, cockroaches, ants, and other household pests."},
+    {"id": "cat_18", "name": "Car Wash & Detailing","desc": "Car washing, interior cleaning, exterior detailing, polishing, waxing, and vehicle care."},
+    {"id": "cat_19", "name": "Computer Repair",     "desc": "Computer troubleshooting, hardware repair, software installation, virus removal, and technical support."},
+    {"id": "cat_20", "name": "Plastering & Tiling",  "desc": "Wall plastering, floor tiling, bathroom tiling, tile replacement, grouting, and surface repair."},
 ]
 
 print("Pre-computing category embeddings...")
@@ -57,6 +64,13 @@ FAQ_DOC = [
     "How long does matching take? Matching is instant. Providers are notified within seconds of your request submission and can accept your job immediately.",
     "Can I choose my preferred provider? Yes, after AI matching you will see a list of available verified providers with their ratings and bios. You can pick whichever you prefer.",
     "Is my personal data safe on the platform? Yes, all personal data is fully encrypted using industry-standard security. We never share your information with third parties.",
+
+    # Added FAQ entries
+    "How can I reschedule my booking? You can request to reschedule an upcoming booking through the app before the scheduled appointment time. Availability depends on the provider, and you will be notified once the new time is confirmed.",
+    "What happens if the provider arrives late? If your provider is running late, you can contact them through the in-app chat to check their estimated arrival time. If the delay causes a serious issue, you can contact customer support for assistance.",
+    "Can I edit my service request after submitting it? You can update the details of your service request before a provider accepts the job. Make sure the description accurately explains the work you need so providers can provide suitable quotes.",
+    "How do I choose between provider quotes? Compare provider ratings, reviews, experience, bios, availability, and quoted prices before selecting the provider that best fits your needs.",
+    "What if I am not satisfied with a provider's work? If you are not satisfied with the completed service, you can open a dispute within 24 hours of job completion. Our support team will review the issue and determine whether a partial or full refund is appropriate.",
 ]
 
 print("Pre-computing FAQ embeddings...")
