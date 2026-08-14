@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Local Services — AI Engine</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', sans-serif; background: #f0f2f5; color: #1a1a2e; min-height: 100vh; }
+
+    /* ── Header ── */
+    header {
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 60%, #0f3460 100%);
+      color: white; padding: 32px 48px;
+      display: flex; align-items: center; gap: 20px;
+    }
+    .header-icon { font-size: 40px; }
+    header h1 { font-size: 24px; font-weight: 700; }
+    header p  { font-size: 13px; color: #8892b0; margin-top: 4px; }
+    .badges { display: flex; gap: 8px; margin-top: 10px; }
+    .badge {
+      background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 20px; padding: 3px 12px; font-size: 11px; color: #ccd6f6;
+    }
+
+    /* ── Layout ── */
+    .container { max-width: 900px; margin: 40px auto; padding: 0 24px 60px; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    @media(max-width:700px){ .grid { grid-template-columns: 1fr; } }
+
+    /* ── Cards ── */
+    .card {
+      background: white; border-radius: 16px; padding: 28px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04);
+      display: flex; flex-direction: column; gap: 14px;
+      transition: box-shadow 0.2s;
+    }
+    .card:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.10); }
+    .card-header { display: flex; align-items: center; gap: 12px; }
+    .card-icon {
+      width: 40px; height: 40px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px; flex-shrink: 0;
+    }
+    .blue  { background: #eff6ff; }
+    .purple{ background: #f5f3ff; }
+    .green { background: #f0fdf4; }
+    .orange{ background: #fff7ed; }
+    .card-title { font-size: 15px; font-weight: 600; color: #1a1a2e; }
+    .card-desc  { font-size: 12px; color: #888; margin-top: 1px; }
+
+    /* ── Inputs ── */
+    input, textarea, select {
+      width: 100%; padding: 10px 14px; border: 1.5px solid #e5e7eb;
+      border-radius: 10px; font-size: 13px; font-family: inherit;
+      color: #1a1a2e; outline: none; transition: border-color 0.2s, box-shadow 0.2s;
+      background: #fafafa;
+    }
+    input:focus, textarea:focus, select:focus {
+      border-color: #4f46e5; box-shadow: 0 0 0 3px rgba(79,70,229,0.08);
+      background: white;
+    }
+    textarea { height: 90px; resize: vertical; }
+    label { font-size: 12px; font-weight: 500; color: #555; margin-bottom: 4px; display: block; }
+    .field { display: flex; flex-direction: column; gap: 4px; }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+    /* ── Buttons ── */
+    button {
+      padding: 11px 20px; border: none; border-radius: 10px; cursor: pointer;
+      font-size: 13px; font-weight: 600; font-family: inherit;
+      transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    .btn-blue   { background: #4f46e5; color: white; }
+    .btn-blue:hover   { background: #4338ca; transform: translateY(-1px); }
+    .btn-purple { background: #7c3aed; color: white; }
+    .btn-purple:hover { background: #6d28d9; transform: translateY(-1px); }
+    .btn-green  { background: #059669; color: white; }
+    .btn-green:hover  { background: #047857; transform: translateY(-1px); }
+    .btn-orange { background: #d97706; color: white; }
+    .btn-orange:hover { background: #b45309; transform: translateY(-1px); }
+    button:active { transform: translateY(0) !important; }
+
+    /* ── Results ── */
+    .result {
+      background: #f8faff; border: 1.5px solid #e0e7ff; border-radius: 10px;
+      padding: 16px; font-size: 13px; line-height: 1.75; color: #1a1a2e;
+      display: none; white-space: pre-wrap; animation: fadeIn 0.3s ease;
+    }
+    .result.success { border-color: #bbf7d0; background: #f0fdf4; }
+    .result.error   { border-color: #fecaca; background: #fef2f2; color: #991b1b; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+    .spinner {
+      display: none; align-items: center; gap: 10px;
+      font-size: 12px; color: #888; padding: 8px 0;
+    }
+    .spinner.show { display: flex; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: #4f46e5;
+           animation: pulse 1.2s ease-in-out infinite; }
+    .dot:nth-child(2){ animation-delay: 0.2s; }
+    .dot:nth-child(3){ animation-delay: 0.4s; }
+    @keyframes pulse { 0%,100%{opacity:0.3; transform:scale(0.8);} 50%{opacity:1; transform:scale(1.2);} }
+
+    /* ── Strengths/Weaknesses ── */
+    .strength { color: #065f46; }
+    .weakness { color: #991b1b; margin-top: 10px; }
+    .bullet { margin-left: 12px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-icon">🤖</div>
+  <div>
+    <h1>Local Services Marketplace — AI Engine</h1>
+    <p>Qodex Internship Group Project · Owner 4: AI Developer</p>
+    <div class="badges">
+      <span class="badge">Service Matcher</span>
+      <span class="badge">Bio Generator</span>
+      <span class="badge">Review Summarizer</span>
+      <span class="badge">Support Chatbot</span>
+    </div>
+  </div>
+</header>
+
+<div class="container">
+  <div class="grid">
+
+    <!-- 1. Service Category Matcher -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon blue">🔍</div>
+        <div>
+          <div class="card-title">Service Matcher</div>
+          <div class="card-desc">Finds the right category from free text</div>
+        </div>
+      </div>
+      <div class="field">
+        <label>Customer Request</label>
+        <textarea id="matchInput" placeholder="e.g. My kitchen sink is leaking everywhere and I need someone urgently"></textarea>
+      </div>
+      <button class="btn-blue" onclick="runMatch()"><span>🔍</span> Find Category</button>
+      <div class="spinner" id="matchSpin"><div class="dot"></div><div class="dot"></div><div class="dot"></div> Analyzing request...</div>
+      <div class="result" id="matchResult"></div>
+    </div>
+
+    <!-- 2. Bio Generator -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon purple">✍️</div>
+        <div>
+          <div class="card-title">Bio Generator</div>
+          <div class="card-desc">Creates professional provider bios</div>
+        </div>
+      </div>
+      <div class="field"><label>Provider Name</label><input id="bioName" placeholder="e.g. Sarah Jenkins"/></div>
+      <div class="field"><label>Skills (comma separated)</label><input id="bioSkills" placeholder="e.g. deep cleaning, window washing"/></div>
+      <div class="row">
+        <div class="field"><label>Years Experience</label><input id="bioYears" type="number" placeholder="8"/></div>
+        <div class="field"><label>Tone</label>
+          <select id="bioTone">
+            <option>Professional</option>
+            <option>Friendly</option>
+            <option>Luxury</option>
+          </select>
+        </div>
+      </div>
+      <button class="btn-purple" onclick="runBio()"><span>✍️</span> Generate Bio</button>
+      <div class="spinner" id="bioSpin"><div class="dot"></div><div class="dot"></div><div class="dot"></div> Generating biography...</div>
+      <div class="result" id="bioResult"></div>
+    </div>
+
+    <!-- 3. Review Summarizer -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon green">⭐</div>
+        <div>
+          <div class="card-title">Review Summarizer</div>
+          <div class="card-desc">Extracts strengths & weaknesses</div>
+        </div>
+      </div>
+      <div class="field">
+        <label>Customer Reviews (one per line)</label>
+        <textarea id="reviewsInput" placeholder="She was amazing, super clean!&#10;Arrived 20 minutes late but great work.&#10;Highly recommend, very thorough.&#10;A bit pricey but worth it."></textarea>
+      </div>
+      <button class="btn-green" onclick="runSummarize()"><span>⭐</span> Summarize Reviews</button>
+      <div class="spinner" id="reviewSpin"><div class="dot"></div><div class="dot"></div><div class="dot"></div> Reading reviews...</div>
+      <div class="result" id="reviewResult"></div>
+    </div>
+
+    <!-- 4. Support Chatbot -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon orange">💬</div>
+        <div>
+          <div class="card-title">Support Chatbot</div>
+          <div class="card-desc">Answers platform questions from FAQ</div>
+        </div>
+      </div>
+      <div class="field">
+        <label>Your Question</label>
+        <input id="chatInput" placeholder="e.g. What if my provider never shows up?" onkeydown="if(event.key==='Enter') runChat()"/>
+      </div>
+      <button class="btn-orange" onclick="runChat()"><span>💬</span> Ask</button>
+      <div class="spinner" id="chatSpin"><div class="dot"></div><div class="dot"></div><div class="dot"></div> Finding answer...</div>
+      <div class="result" id="chatResult"></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  async function post(url, body) {
+    const r = await fetch(url, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    return r.json();
+  }
+  function setResult(id, text, type='') {
+    const el = document.getElementById(id);
+    el.className = 'result ' + type;
+    el.innerText = text;
+    el.style.display = 'block';
+  }
+  function setResultHTML(id, html, type='') {
+    const el = document.getElementById(id);
+    el.className = 'result ' + type;
+    el.innerHTML = html;
+    el.style.display = 'block';
+  }
+  function spin(id, show) {
+    document.getElementById(id).className = 'spinner' + (show ? ' show' : '');
+  }
+  function hide(id) { document.getElementById(id).style.display = 'none'; }
+
+  async function runMatch() {
+    const q = document.getElementById('matchInput').value.trim();
+    if (!q) return;
+    hide('matchResult'); spin('matchSpin', true);
+    const res = await post('/ai/match', { customer_request: q });
+    spin('matchSpin', false);
+    if (res.status === 'success')
+      setResult('matchResult', 'Matched Category: ' + res.matched_category_name + '\nConfidence Score: ' + (res.confidence_score * 100).toFixed(1) + '%', 'success');
+    else
+      setResult('matchResult', 'No strong match found. Manual category selection is recommended.\nBest guess score: ' + (res.confidence_score * 100).toFixed(1) + '%');
+  }
+
+  async function runBio() {
+    const name  = document.getElementById('bioName').value.trim();
+    const skills= document.getElementById('bioSkills').value.split(',').map(s=>s.trim()).filter(Boolean);
+    const years = parseInt(document.getElementById('bioYears').value) || 1;
+    const tone  = document.getElementById('bioTone').value;
+    if (!name) return;
+    hide('bioResult'); spin('bioSpin', true);
+    const res = await post('/ai/generate-bio', { provider_name: name, skills, years_experience: years, tone });
+    spin('bioSpin', false);
+    if (res.status === 'success') setResult('bioResult', res.bio, 'success');
+    else setResult('bioResult', 'Error: ' + res.message, 'error');
+  }
+
+  async function runSummarize() {
+    const reviews = document.getElementById('reviewsInput').value.split('\n').map(r=>r.trim()).filter(Boolean);
+    if (!reviews.length) return;
+    hide('reviewResult'); spin('reviewSpin', true);
+    const res = await post('/ai/summarize-reviews', { reviews });
+    spin('reviewSpin', false);
+    if (res.status === 'success') {
+      const s = res.summary;
+      const sentColor = s.overall_sentiment === 'Positive' ? '#065f46' : s.overall_sentiment === 'Negative' ? '#991b1b' : '#92400e';
+      const stars = s.average_rating ? '⭐'.repeat(Math.round(s.average_rating)) + ' ' + s.average_rating.toFixed(1) + '/5' : '';
+      const html =
+        '<div style="margin-bottom:12px; display:flex; gap:12px; align-items:center;">' +
+          '<span style="font-size:15px;">' + stars + '</span>' +
+          '<span style="background:' + sentColor + '; color:white; padding:2px 10px; border-radius:20px; font-size:12px; font-weight:600;">' + (s.overall_sentiment || '') + '</span>' +
+        '</div>' +
+        '<div class="strength"><strong>✅ Strengths</strong><br>' + s.strengths.map(x=>'<div class="bullet">' + x + '</div>').join('') + '</div>' +
+        '<div class="weakness"><strong>⚠️ Weaknesses</strong><br>' + (s.weaknesses.length ? s.weaknesses.map(x=>'<div class="bullet">' + x + '</div>').join('') : '<div class="bullet">None found</div>') + '</div>';
+      setResultHTML('reviewResult', html, 'success');
+    } else setResult('reviewResult', 'Error: ' + res.message, 'error');
+  }
+
+  async function runChat() {
+    const msg = document.getElementById('chatInput').value.trim();
+    if (!msg) return;
+    hide('chatResult'); spin('chatSpin', true);
+    const res = await post('/ai/chat', { user_message: msg });
+    spin('chatSpin', false);
+    if (res.status === 'success') setResult('chatResult', res.response, 'success');
+    else setResult('chatResult', 'Error: ' + res.message, 'error');
+  }
+</script>
+</body>
+</html>
