@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Service Marketplace - Home</title>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/dashboard-styles.css">
+</head>
+<body>
+    <div class="app-shell">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-logo">✦ Service</div>
+            <div class="sidebar-subtitle">Local Marketplace</div>
+
+            <div class="role-switch">
+                <button class="active" onclick="switchRole('public')">Public</button>
+                <button onclick="switchRole('dashboard')">Dashboard</button>
+            </div>
+
+            <nav class="nav-list">
+                <a href="#" class="nav-item active" onclick="loadPage('home'); return false;">🏠 Home</a>
+                <a href="#" class="nav-item" onclick="loadPage('categories'); return false;">📂 Browse Categories</a>
+                <a href="#" class="nav-item" onclick="loadPage('login'); return false;">🔐 Login/Signup</a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <span>v1.0 · Made with ❤️</span>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main" id="mainContent">
+            <!-- Dynamic content will load here -->
+        </main>
+    </div>
+
+    <!-- ALL JS FILES - Load in correct order -->
+    <script src="js/public/home.js"></script>
+    <script src="js/public/categories.js"></script>
+    <script src="js/public/category-detail.js"></script>
+    <script src="js/public/provider-profile.js"></script>
+    <script src="js/public/request-quote.js"></script>
+    <script src="js/public/login.js"></script>
+    <script src="js/dashboard/my-request.js"></script>
+    <script src="js/dashboard/request-detail.js"></script>
+    <script src="js/dashboard/review.js"></script>
+    <script src="js/app.js"></script>
+
+    <script>
+        // Load home page on start
+        document.addEventListener('DOMContentLoaded', function() {
+            loadPage('home');
+        });
+    </script>
+</body>
+</html>
