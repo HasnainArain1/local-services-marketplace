@@ -1,0 +1,403 @@
+/* ============================================================
+   Local Service Marketplace — Dashboard Design System
+   Fonts: Space Grotesk (display), Inter (body/UI), IBM Plex Mono (data/codes)
+   Import in <head> or via @import:
+   https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap
+   ============================================================ */
+
+:root {
+  /* Core palette */
+  --ink: #1E2A38;        /* primary text, sidebar bg, headers */
+  --ink-soft: #3A4A5C;   /* secondary text */
+  --paper: #F5F4EF;      /* page background */
+  --card: #FFFFFF;       /* card/surface background */
+  --border: #E2E0D6;     /* hairline borders */
+  --muted: #6B7280;      /* muted/meta text */
+
+  /* Accent: Provider / job actions */
+  --amber: #D98E2B;
+  --amber-deep: #8A5A15; /* text on amber-bg */
+  --amber-bg: #FBEEDA;
+
+  /* Accent: Admin */
+  --teal: #2F6F68;
+  --teal-deep: #1C4642;
+  --teal-bg: #E4F0EE;
+
+  /* Status */
+  --success: #3F7D5C;
+  --success-bg: #E4F2E9;
+  --danger: #B94A3D;
+  --danger-bg: #F9E7E4;
+  --gray-bg: #EDECE6;
+
+  /* Surfaces */
+  --row-alt: #FAF9F5;
+  --input-bg: #FCFCFA;
+
+  /* Font families */
+  --font-display: 'Space Grotesk', sans-serif;
+  --font-body: 'Inter', sans-serif;
+  --font-mono: 'IBM Plex Mono', monospace;
+}
+
+/* ============================================================
+   Base / layout
+   ============================================================ */
+
+body {
+  font-family: var(--font-body);
+  background: var(--paper);
+  color: var(--ink);
+  margin: 0;
+}
+
+.app-shell {
+  display: flex;
+  min-height: 640px;
+}
+
+/* ---- Sidebar ---- */
+
+.sidebar {
+  width: 230px;
+  background: var(--ink);
+  padding: 22px 16px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-logo {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 2px;
+}
+
+.sidebar-subtitle {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: #94A3B0;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  margin-bottom: 22px;
+}
+
+/* Role switch (Provider / Admin) */
+.role-switch {
+  display: flex;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 3px;
+  margin-bottom: 20px;
+}
+
+.role-switch button {
+  all: unset;
+  cursor: pointer;
+  flex: 1;
+  text-align: center;
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 7px 0;
+  border-radius: 6px;
+  color: #C7CDD3;
+}
+
+.role-switch button.active {
+  color: var(--ink);
+  background: #fff;
+}
+
+/* Nav list */
+.nav-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.nav-item {
+  all: unset;
+  cursor: pointer;
+  font-size: 13.5px;
+  font-weight: 500;
+  padding: 9px 10px;
+  border-radius: 7px;
+  color: #AEB6BE;
+  border-left: 2px solid transparent;
+}
+
+.nav-item.active {
+  color: #fff;
+  background: rgba(217, 142, 43, 0.22); /* amber @ 22% */
+  border-left: 2px solid var(--amber);
+}
+
+.sidebar-footer {
+  margin-top: auto;
+  font-size: 11.5px;
+  color: #7C8894;
+  line-height: 1.5;
+  padding-top: 20px;
+}
+
+/* ---- Main content ---- */
+
+.main {
+  flex: 1;
+  padding: 28px 34px;
+  min-width: 0;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 22px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.page-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.page-title {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--ink);
+  margin: 0;
+}
+
+.page-endpoint {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 6px;
+}
+
+/* ============================================================
+   Primitives
+   ============================================================ */
+
+/* Card */
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px 22px;
+}
+
+/* Buttons */
+.btn {
+  font-family: var(--font-body);
+  font-size: 13.5px;
+  font-weight: 600;
+  padding: 9px 16px;
+  border-radius: 7px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: opacity 0.15s;
+}
+.btn:active { opacity: 0.85; }
+
+.btn-primary { background: var(--ink); color: #fff; }
+.btn-amber   { background: var(--amber); color: #fff; }
+.btn-ghost   { background: transparent; color: var(--ink); border: 1px solid var(--border); }
+.btn-danger  { background: transparent; color: var(--danger); border: 1px solid var(--danger-bg); }
+
+.btn-sm { padding: 5px 10px; font-size: 12px; }
+
+/* Status stamps / badges */
+.stamp {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-weight: 500;
+  white-space: nowrap;
+  display: inline-block;
+}
+.stamp-amber   { background: var(--amber-bg);   color: var(--amber-deep); }
+.stamp-teal    { background: var(--teal-bg);    color: var(--teal-deep); }
+.stamp-success { background: var(--success-bg); color: var(--success); }
+.stamp-danger  { background: var(--danger-bg);  color: var(--danger); }
+.stamp-gray    { background: var(--gray-bg);    color: var(--muted); }
+
+/* Status → stamp color mapping (for reference)
+   new          -> amber
+   quoted       -> teal
+   in_progress  -> amber
+   completed    -> success
+   active       -> success
+   pending      -> amber
+   suspended    -> danger
+*/
+
+/* Form fields */
+.field { display: block; margin-bottom: 16px; }
+
+.field-label {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink-soft);
+  margin-bottom: 6px;
+}
+
+.field-hint {
+  font-size: 11.5px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+.input,
+select.input,
+textarea.input {
+  font-family: var(--font-body);
+  width: 100%;
+  font-size: 14px;
+  padding: 9px 11px;
+  border-radius: 7px;
+  border: 1px solid var(--border);
+  background: var(--input-bg);
+  box-sizing: border-box;
+  outline: none;
+}
+
+textarea.input { min-height: 80px; resize: vertical; }
+textarea.input.tall { min-height: 100px; }
+
+/* ============================================================
+   Requests list (ticket rows)
+   ============================================================ */
+
+.request-row {
+  all: unset;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 18px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.request-id {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  color: var(--muted);
+  width: 90px;
+  flex-shrink: 0;
+}
+
+.request-customer { font-size: 14px; font-weight: 600; color: var(--ink); }
+
+.request-summary {
+  font-size: 13px;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.request-date { font-size: 12px; color: var(--muted); flex-shrink: 0; }
+
+/* Request detail */
+.back-link {
+  all: unset;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 16px;
+  display: inline-block;
+}
+
+.detail-section {
+  border-top: 1px solid var(--border);
+  padding-top: 16px;
+  margin-bottom: 16px;
+}
+
+.mobile-app-note {
+  font-size: 12.5px;
+  color: var(--muted);
+  background: var(--row-alt);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 10px 12px;
+}
+
+/* ============================================================
+   Reviews
+   ============================================================ */
+
+.rating-stars { font-family: var(--font-mono); font-size: 12px; color: var(--amber-deep); }
+
+/* ============================================================
+   Admin: stat cards
+   ============================================================ */
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+}
+
+.stat-label { font-size: 12.5px; color: var(--muted); margin-bottom: 8px; }
+.stat-value { font-family: var(--font-display); font-size: 30px; font-weight: 600; color: var(--ink); }
+
+/* ============================================================
+   Admin: tables
+   ============================================================ */
+
+.table-wrap {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+table.data-table { width: 100%; border-collapse: collapse; }
+
+table.data-table thead tr { background: var(--row-alt); }
+
+table.data-table th {
+  text-align: left;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+table.data-table td {
+  font-size: 13.5px;
+  color: var(--ink);
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+table.data-table td.mono { font-family: var(--font-mono); font-size: 12.5px; }
+
+/* ============================================================
+   Typography helpers
+   ============================================================ */
+
+.font-display { font-family: var(--font-display); }
+.font-body    { font-family: var(--font-body); }
+.font-mono    { font-family: var(--font-mono); }
