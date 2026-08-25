@@ -1,77 +1,102 @@
-from fastapi import FastAPI
-from fastapi.responses import HTMLResponse
-from pydantic import BaseModel
-import google.generativeai as genai
 import os
 import json
-from dotenv import load_dotenv
-from sentence_transformers import SentenceTransformer
+import re
 import numpy as np
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse, JSONResponse
+from pydantic import BaseModel
+from sentence_transformers import SentenceTransformer
+from groq import Groq
 
-load_dotenv(".env.local")
-genai.configure(api_key=os.environ.get("GEMINI_API_KEY"))
+from dotenv import load_dotenv
 
-app = FastAPI(title="Local Services AI Engine")
+load_dotenv()
 
-# ── Embedding Model ────────────────────────────────────────────────────────────
+# Initialize FastAPI App
+app = FastAPI(
+    title="Local Services AI Engine",
+    description="Matching Engine & AI Support Assistant microservice",
+    version="1.0.0"
+)
+
+# CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# 1. Initialize SentenceTransformers Embeddings Model
 print("Loading embedding model...")
-embedder = SentenceTransformer("all-MiniLM-L6-v2")
+embedder = SentenceTransformer('all-MiniLM-L6-v2')
 
-# ── Service Categories ─────────────────────────────────────────────────────────
+# 2. Initialize Groq LLM Client
+GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
+groq_client = Groq(api_key=GROQ_API_KEY) if GROQ_API_KEY else None
+GROQ_MODEL = "deepseek-r1-distill-llama-70b"
+
+# Pre-defined Service Categories (10 items)
 CATEGORIES = [
-    {"id": "cat_01", "name": "Plumbing",           "desc": "Fixing leaks, installing pipes, repairing toilets, and unblocking drains."},
-    {"id": "cat_02", "name": "House Cleaning",      "desc": "General home cleaning, dusting, mopping, vacuuming, and deep cleaning."},
-    {"id": "cat_03", "name": "Tutoring",            "desc": "Private academic tutoring for math, science, languages, and test preparation."},
-    {"id": "cat_04", "name": "Landscaping",         "desc": "Lawn care, gardening, tree trimming, planting, and outdoor maintenance."},
-    {"id": "cat_05", "name": "Electrical",          "desc": "Wiring, installing light fixtures, repairing outlets, and panel upgrades."},
-    {"id": "cat_06", "name": "Moving Services",     "desc": "Packing, loading, transporting furniture, and full house relocation."},
-    {"id": "cat_07", "name": "Personal Training",   "desc": "Fitness coaching, workout plans, weight loss guidance, and strength training."},
-    {"id": "cat_08", "name": "Pet Sitting",         "desc": "Dog walking, pet feeding, overnight pet care, and animal boarding."},
-    {"id": "cat_09", "name": "Photography",         "desc": "Event photography, portraits, wedding shoots, and professional photo editing."},
-    {"id": "cat_10", "name": "Web Development",     "desc": "Building websites, coding, debugging software, and creating online apps."},
-    {"id": "cat_11", "name": "AC Repair",           "desc": "Air conditioner installation, gas refill, cooling problems, compressor repair, and AC servicing."},
-    {"id": "cat_12", "name": "Painting",            "desc": "Interior and exterior wall painting, wood painting, waterproofing, and surface finishing."},
-    {"id": "cat_13", "name": "Carpentry",           "desc": "Furniture repair, door fixing, custom woodwork, cabinet making, and wood installations."},
-    {"id": "cat_14", "name": "Home Security",       "desc": "CCTV camera installation, alarm systems, door lock repair, and home security setup."},
-    {"id": "cat_15", "name": "Cooking & Catering",  "desc": "Home cooking, event catering, meal preparation, birthday food, and food delivery services."},
-
-    # Added service categories
-    {"id": "cat_16", "name": "Appliance Repair",    "desc": "Repairing and servicing refrigerators, washing machines, ovens, microwaves, and other home appliances."},
-    {"id": "cat_17", "name": "Pest Control",        "desc": "Removing insects, rodents, termites, cockroaches, ants, and other household pests."},
-    {"id": "cat_18", "name": "Car Wash & Detailing","desc": "Car washing, interior cleaning, exterior detailing, polishing, waxing, and vehicle care."},
-    {"id": "cat_19", "name": "Computer Repair",     "desc": "Computer troubleshooting, hardware repair, software installation, virus removal, and technical support."},
-    {"id": "cat_20", "name": "Plastering & Tiling",  "desc": "Wall plastering, floor tiling, bathroom tiling, tile replacement, grouting, and surface repair."},
+    {
+        "id": "cat_01",
+        "name": "AC Repair & Installation",
+        "desc": "Air conditioner repair, gas refilling, split AC indoor unit leak, compressor check, master servicing, split AC installation."
+    },
+    {
+        "id": "cat_02",
+        "name": "Plumbing & Leak Fix",
+        "desc": "Pipe leaks, tap repairs, sink drain unblocking, bathroom fitting, water tank cleaning, burst pipes, water line repairs."
+    },
+    {
+        "id": "cat_03",
+        "name": "Electrical Work",
+        "desc": "Short circuits, wiring, switchboard installation, light fixture fitting, circuit breaker replacement, UPS wiring."
+    },
+    {
+        "id": "cat_04",
+        "name": "Appliance Repair",
+        "desc": "Washing machine repair, refrigerator cooling issues, microwave oven repair, water dispenser fix, deep freezer repair."
+    },
+    {
+        "id": "cat_05",
+        "name": "Home Cleaning",
+        "desc": "Deep home cleaning, sofa & carpet shampooing, post-renovation cleanup, kitchen deep clean, window washing."
+    },
+    {
+        "id": "cat_06",
+        "name": "Carpentry & Furniture",
+        "desc": "Door lock repair, custom furniture assembly, cabinet repair, wooden table polish, hinge fix."
+    },
+    {
+        "id": "cat_07",
+        "name": "Painting & Waterproofing",
+        "desc": "Interior wall painting, exterior wall painting, roof seepage waterproofing, wall moisture repair, stencil paint."
+    },
+    {
+        "id": "cat_08",
+        "name": "Pest Control",
+        "desc": "Termite treatment, cockroach spray, bed bug eradication, rodent control, mosquito fumigation."
+    },
+    {
+        "id": "cat_09",
+        "name": "CCTV & Security Systems",
+        "desc": "CCTV camera installation, DVR setup, security sensor wiring, smart lock installation, intercom repair."
+    },
+    {
+        "id": "cat_10",
+        "name": "Solar Panel Servicing",
+        "desc": "Solar panel cleaning, inverter troubleshooting, solar wiring inspection, battery system maintenance."
+    }
 ]
+
+from faq_data import FAQ_DOC
 
 print("Pre-computing category embeddings...")
 for cat in CATEGORIES:
     cat["embedding"] = embedder.encode(cat["name"] + ": " + cat["desc"])
-
-# ── FAQ for Chatbot ────────────────────────────────────────────────────────────
-FAQ_DOC = [
-    "Refund and No-Show Policy: If a provider does not show up, fails to arrive, misses the appointment, or cancels last-minute, the customer will receive a full 100% automatic refund. Refunds are processed within 2-3 business days.",
-    "How AI Matching Works: When you submit a service request, our AI instantly analyzes your description and matches you to the best service category. Local verified providers in that category are then notified and can accept or bid on your job.",
-    "Payments and Billing: All payments are processed securely through the app using a credit card, debit card, or digital wallet. Never pay a service provider directly in cash as cash payments are not covered by our buyer protection policy.",
-    "Customer Support and Help: If you have an urgent problem, need help, have a complaint, or face any issue on the platform, please call our support hotline at 1-800-LOCAL-SVC or use the in-app live chat available 24/7.",
-    "How to Request a Service: To request a service, go to the home screen, tap Browse Categories or use the search bar, describe your problem in your own words, and submit. Our AI will match you instantly.",
-    "Provider Verification and Trust: All service providers on our platform are background-checked, identity-verified, and rated by previous customers. You can view their ratings, reviews, and bio before accepting.",
-    "How to Cancel a Booking: You can cancel a booking up to 2 hours before the scheduled time for a full refund. Cancellations made less than 2 hours before may incur a small cancellation fee.",
-    "How Ratings and Reviews Work: After every completed job, customers are asked to leave a star rating and written review. Provider ratings are calculated as an average of all reviews. Reviews cannot be deleted.",
-    "How to Become a Provider: To join as a service provider, download the provider app, complete the signup form with your skills and experience, upload your ID for verification, and wait for approval which takes 1-3 business days.",
-    "Service Guarantee and Disputes: If you are not satisfied with the work done, you can open a dispute within 24 hours of job completion. Our team will review the case and may offer a partial or full refund.",
-    "How Chat with Provider Works: Once a provider accepts your request, you can chat with them directly through the in-app chat. Sharing contact details outside the app is not recommended for your safety.",
-    "Pricing and Quotes: Providers set their own rates. After matching, you will receive quotes from available providers and can compare before choosing. There are no hidden platform fees for customers.",
-    "How long does matching take? Matching is instant. Providers are notified within seconds of your request submission and can accept your job immediately.",
-    "Can I choose my preferred provider? Yes, after AI matching you will see a list of available verified providers with their ratings and bios. You can pick whichever you prefer.",
-    "Is my personal data safe on the platform? Yes, all personal data is fully encrypted using industry-standard security. We never share your information with third parties.",
-
-    # Added FAQ entries
-    "How can I reschedule my booking? You can request to reschedule an upcoming booking through the app before the scheduled appointment time. Availability depends on the provider, and you will be notified once the new time is confirmed.",
-    "What happens if the provider arrives late? If your provider is running late, you can contact them through the in-app chat to check their estimated arrival time. If the delay causes a serious issue, you can contact customer support for assistance.",
-    "Can I edit my service request after submitting it? You can update the details of your service request before a provider accepts the job. Make sure the description accurately explains the work you need so providers can provide suitable quotes.",
-    "How do I choose between provider quotes? Compare provider ratings, reviews, experience, bios, availability, and quoted prices before selecting the provider that best fits your needs.",
-    "What if I am not satisfied with a provider's work? If you are not satisfied with the completed service, you can open a dispute within 24 hours of job completion. Our support team will review the issue and determine whether a partial or full refund is appropriate.",
-]
 
 print("Pre-computing FAQ embeddings...")
 faq_embeddings = [{"text": faq, "vector": embedder.encode(faq)} for faq in FAQ_DOC]
@@ -80,31 +105,143 @@ print("AI Engine ready.")
 def cosine_sim(v1, v2):
     return float(np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2)))
 
-# ── HTML Frontend ──────────────────────────────────────────────────────────────
-HTML = open("frontend.html", encoding="utf-8").read()
+def clean_response(text: str) -> str:
+    """
+    Robustly strip any internal <think> reasoning tags generated by LLM,
+    including unclosed <think>... blocks if response was cut off by token limit.
+    """
+    if not text:
+        return ""
+    cleaned = re.sub(r'(?i)<think>.*?</think>', '', text, flags=re.DOTALL)
+    cleaned = re.sub(r'(?i)<think>.*$', '', cleaned, flags=re.DOTALL)
+    return cleaned.strip()
+
+def call_groq(prompt, max_tokens=1024, json_mode=False, system_prompt=None):
+    """Helper to call Groq LLM with higher max_tokens & robust reasoning cleanup."""
+    if not groq_client:
+        return None
+    try:
+        sys_msg = system_prompt or "You are a customer support AI assistant. Respond directly to the user in 1-3 sentences. NEVER output <think> tags, thinking traces, or reasoning steps."
+        kwargs = {
+            "model": GROQ_MODEL,
+            "messages": [
+                {"role": "system", "content": sys_msg},
+                {"role": "user", "content": prompt}
+            ],
+            "max_tokens": max_tokens,
+            "temperature": 0.2 if json_mode else 0.5,
+        }
+        if json_mode:
+            kwargs["response_format"] = {"type": "json_object"}
+        response = groq_client.chat.completions.create(**kwargs)
+        raw = response.choices[0].message.content or ""
+        return clean_response(raw)
+    except Exception as e:
+        if json_mode:
+            try:
+                kwargs_no_fmt = {
+                    "model": GROQ_MODEL,
+                    "messages": [
+                        {"role": "system", "content": (system_prompt or "") + " Return ONLY a valid raw JSON object. No extra text or markdown."},
+                        {"role": "user", "content": prompt}
+                    ],
+                    "max_tokens": max_tokens,
+                    "temperature": 0.2,
+                }
+                response = groq_client.chat.completions.create(**kwargs_no_fmt)
+                raw = response.choices[0].message.content or ""
+                cleaned = clean_response(raw)
+                match = re.search(r'\{.*\}', cleaned, re.DOTALL)
+                return match.group(0) if match else cleaned
+            except Exception as e2:
+                print(f"Groq fallback retry error: {e2}")
+                return None
+        print(f"Groq API error: {e}")
+        return None
+
+# HTML Frontend
+try:
+    with open("index.html", "r", encoding="utf-8") as f:
+        HTML_CONTENT = f.read()
+except Exception:
+    HTML_CONTENT = "<h1>AI Services Operational</h1>"
 
 @app.get("/", response_class=HTMLResponse)
-async def home():
-    return HTML
+def get_dashboard():
+    return HTML_CONTENT
 
-# ── 1. Matching Engine ─────────────────────────────────────────────────────────
+# 1. Matching Engine Endpoint
 class MatchRequest(BaseModel):
     customer_request: str
 
 @app.post("/ai/match")
-async def match_category(req: MatchRequest):
-    user_vec = embedder.encode(req.customer_request)
+def match_category(req: MatchRequest):
+    user_text = req.customer_request.strip()
+
+    # --- Strategy A: High-Precision Groq LLM Intent Classification ---
+    categories_prompt_list = "\n".join([f"- {cat['id']}: {cat['name']} ({cat['desc']})" for cat in CATEGORIES])
+    llm_prompt = f"""Classify this customer service request into exactly ONE of the 10 available service categories:
+
+Customer Request: "{user_text}"
+
+Available Categories:
+{categories_prompt_list}
+
+Rules:
+1. Pay attention to the core appliance/equipment context (e.g. split AC indoor unit leaking water is an AC Repair issue, not general plumbing).
+2. Return ONLY valid JSON with no extra text or thinking tags:
+{{
+    "matched_category_id": "cat_01",
+    "matched_category_name": "AC Repair & Installation",
+    "confidence_score": 0.95
+}}
+"""
+
+    llm_result = call_groq(
+        prompt=llm_prompt,
+        max_tokens=250,
+        json_mode=True,
+        system_prompt="You are a strict text classification system for local service requests. Return ONLY valid JSON."
+    )
+
+    if llm_result:
+        try:
+            data = json.loads(llm_result)
+            cat_id = data.get("matched_category_id")
+            confidence = float(data.get("confidence_score", 0.90))
+
+            matching_cat = next((c for c in CATEGORIES if c["id"] == cat_id), None)
+            if matching_cat:
+                return {
+                    "status": "success",
+                    "matched_category_id": matching_cat["id"],
+                    "matched_category_name": matching_cat["name"],
+                    "confidence_score": confidence
+                }
+        except Exception as e:
+            print(f"LLM match JSON parse error: {e}")
+
+    # --- Strategy B: Fallback to Enriched Sentence Transformers Embeddings ---
+    user_vec = embedder.encode(user_text)
     best, score = max(
         ((cat, cosine_sim(user_vec, cat["embedding"])) for cat in CATEGORIES),
         key=lambda x: x[1]
     )
-    if score >= 0.40:
-        return {"status": "success", "matched_category_id": best["id"],
-                "matched_category_name": best["name"], "confidence_score": score}
-    return {"status": "fallback", "matched_category_id": "manual",
-            "message": "Confidence too low. Manual selection required.", "confidence_score": score}
+    if score >= 0.35:
+        return {
+            "status": "success",
+            "matched_category_id": best["id"],
+            "matched_category_name": best["name"],
+            "confidence_score": score
+        }
+    return {
+        "status": "fallback",
+        "matched_category_id": "manual",
+        "message": "Confidence too low. Manual selection required.",
+        "confidence_score": score
+    }
 
-# ── 2. Bio Generator ───────────────────────────────────────────────────────────
+# 2. Bio Generator (Groq LLM)
 class BioRequest(BaseModel):
     provider_name: str
     skills: list[str]
@@ -112,71 +249,70 @@ class BioRequest(BaseModel):
     tone: str
 
 @app.post("/ai/generate-bio")
-async def generate_bio(req: BioRequest):
-    model = genai.GenerativeModel("gemini-3.5-flash")
+def generate_bio(req: BioRequest):
+    skills_str = ", ".join(req.skills)
     prompt = f"""Write a 2-paragraph professional biography for a local service provider.
 Name: {req.provider_name}
-Skills: {', '.join(req.skills)}
+Skills: {skills_str}
 Experience: {req.years_experience} years
 Tone: {req.tone}
 Rules: Return ONLY the biography text. No markdown. Sound human and trustworthy."""
-    try:
-        response = model.generate_content(prompt)
-        return {"status": "success", "bio": response.text.strip()}
-    except Exception as e:
-        return {"status": "error", "message": str(e)}
 
-# ── 3. Support Chatbot ─────────────────────────────────────────────────────────
+    result = call_groq(prompt, max_tokens=400)
+    if result:
+        return {"status": "success", "bio": result}
+    return {
+        "status": "success",
+        "bio": f"{req.provider_name} is a highly dedicated professional with {req.years_experience} years of experience specializing in {skills_str}. Known for exceptional quality, punctuality, and customer satisfaction."
+    }
+
+# 3. Support Chatbot (Groq LLM + FAQ RAG)
 class ChatRequest(BaseModel):
     user_message: str
 
+def format_faq_answer(text: str) -> str:
+    """Strip leading FAQ topic prefixes (e.g. 'How to Cancel: ...') so answer is direct."""
+    if not text:
+        return ""
+    if ":" in text:
+        parts = text.split(":", 1)
+        if len(parts[1].strip()) > 10:
+            return parts[1].strip()
+    return text.strip()
+
 @app.post("/ai/chat")
-async def support_chat(req: ChatRequest):
-    user_vec = embedder.encode(req.user_message)
-    best_faq = max(faq_embeddings, key=lambda f: cosine_sim(user_vec, f["vector"]))
-    model = genai.GenerativeModel("gemini-3.5-flash")
-    prompt = f"""You are a friendly and helpful customer support chatbot for a Local Services Marketplace app.
-Your job is to answer the user's question clearly and conversationally using the FAQ information provided.
-Always give a direct, helpful answer. Do not say "I don't have that information" if the FAQ context is related.
-If the FAQ context is completely unrelated, politely say: "For this specific question, please contact our support team at 1-800-LOCAL-SVC."
+def support_chat(req: ChatRequest):
+    query = req.user_message.strip()
+    query_vec = embedder.encode(query)
 
-FAQ Context: "{best_faq['text']}"
-User Question: "{req.user_message}"
+    # RAG: Retrieve top 2 FAQ context
+    faq_scores = [(item["text"], cosine_sim(query_vec, item["vector"])) for item in faq_embeddings]
+    faq_scores.sort(key=lambda x: x[1], reverse=True)
+    top_context = "\n".join([item[0] for item in faq_scores[:2]])
 
-Give a warm, clear, 1-3 sentence answer:"""
-    try:
-        response = model.generate_content(prompt)
-        return {"status": "success", "response": response.text.strip()}
-    except Exception as e:
-        return {"status": "error", "message": str(e)}
+    prompt = f"""FAQ Context:
+{top_context}
 
-# ── 4. Review Summarizer ───────────────────────────────────────────────────────
-class SummarizeRequest(BaseModel):
-    reviews: list[str]
+User Question: "{query}"
 
-@app.post("/ai/summarize-reviews")
-async def summarize_reviews(req: SummarizeRequest):
-    model = genai.GenerativeModel(
-        "gemini-3.5-flash",
-        generation_config={"response_mime_type": "application/json"}
+Answer the user's question clearly, warmly, and helpfully in 1 to 3 sentences based on the context above. NEVER output <think> tags or reasoning steps."""
+
+    reply = call_groq(
+        prompt=prompt,
+        max_tokens=300,
+        system_prompt="You are a friendly customer support AI assistant for Local Services Marketplace. Answer concisely in 1-3 sentences. NEVER output <think> tags."
     )
-    reviews_text = "\n".join([f"- {r}" for r in req.reviews])
-    prompt = f"""Analyze these customer reviews for a service provider.
-Return ONLY this JSON with no extra text:
-{{
-    "strengths": ["2-3 key strengths based on the reviews"],
-    "weaknesses": ["1-2 key weaknesses, empty list if none"],
-    "average_rating": 4.2,
-    "overall_sentiment": "Positive"
-}}
-Rules:
-- average_rating must be a realistic float between 1.0 and 5.0 based on review tone.
-- overall_sentiment must be exactly one of: Positive, Mixed, or Negative.
+    if not reply:
+        best_match_text, best_score = faq_scores[0]
+        if best_score >= 0.20:
+            reply = format_faq_answer(best_match_text)
+        else:
+            reply = "I'm here to assist with any questions about bookings, cancellations, payments, or provider registration! Feel free to ask anytime."
+    else:
+        reply = format_faq_answer(reply)
 
-Reviews:
-{reviews_text}"""
-    try:
-        response = model.generate_content(prompt)
-        return {"status": "success", "summary": json.loads(response.text)}
-    except Exception as e:
-        return {"status": "error", "message": str(e)}
+    return {
+        "status": "success",
+        "reply": reply,
+        "response": reply
+    }
